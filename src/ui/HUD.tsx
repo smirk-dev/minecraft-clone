@@ -65,7 +65,7 @@ export function HUD() {
           <div>Visible chunks: {stats.visibleChunks}</div>
           <div>Triangles: {stats.triangles.toLocaleString()}</div>
           <div>Queued: {stats.queuedRemeshes}</div>
-          <div>Pos: {fmtPos()}</div>
+          <div>Pos: {pos.x.toFixed(1)}, {pos.y.toFixed(1)}, {pos.z.toFixed(1)}</div>
         </div>
       )}
     </>
@@ -74,14 +74,4 @@ export function HUD() {
 
 function isDay(t: number) {
   return t > 0.25 && t < 0.75;
-}
-
-function fmtPos() {
-  // Read live runtime values for accuracy
-  // Imported lazily to keep this UI module simple
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { runtime } = (globalThis as { __runtime?: { runtime: { playerPos: { x: number; y: number; z: number } } } }).__runtime
-    ?? require('../game/runtime') as { runtime: { playerPos: { x: number; y: number; z: number } } };
-  const p = runtime.playerPos;
-  return `${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`;
 }
