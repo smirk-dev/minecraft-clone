@@ -26,6 +26,12 @@ export function WorldSystem() {
   const opaqueMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const transpMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const groupRef = useRef<THREE.Group | null>(null);
+  const statsFrameRef = useRef(0);
+
+  // Expose materials so SkySystem can update their uniforms directly (avoids scene traversal).
+  useEffect(() => {
+    (window as Record<string, unknown>).__voxelMats = () => [opaqueMatRef.current, transpMatRef.current];
+  }, []);
 
   useEffect(() => {
     const group = new THREE.Group();
@@ -147,28 +153,32 @@ export function WorldSystem() {
       c.meshDirty = false;
     }
 
-    // 6) Stats
-    let triangles = 0;
-    let visible = 0;
-    meshesRef.current.forEach((cm) => {
-      if (cm.opaque) {
-        const idx = cm.opaque.geometry.getIndex();
-        if (idx) triangles += idx.count / 3;
-        visible++;
-      }
-      if (cm.transparent) {
-        const idx = cm.transparent.geometry.getIndex();
-        if (idx) triangles += idx.count / 3;
-      }
-    });
-    runtime.triangles = triangles;
-    runtime.visibleChunks = visible;
-    setStats({
-      loadedChunks: w.chunks.size,
-      visibleChunks: visible,
-      triangles,
-      queuedRemeshes: meshQueue.length + genQueue.length,
-    });
+    // 6) Stats (throttled to every 60 frames to avoid per-frame Zustand re-renders)
+    statsFrameRef.current++;
+    if (statsFrameRef.current >= 60) {
+      statsFrameRef.current = 0;
+      let triangles = 0;
+      let visible = 0;
+      meshesRef.current.forEach((cm) => {
+        if (cm.opaque) {
+          const idx = cm.opaque.geometry.getIndex();
+          if (idx) triangles += idx.count / 3;
+          visible++;
+        }
+        if (cm.transparent) {
+          const idx = cm.transparent.geometry.getIndex();
+          if (idx) triangles += idx.count / 3;
+        }
+      });
+      runtime.triangles = triangles;
+      runtime.visibleChunks = visible;
+      setStats({
+        loadedChunks: w.chunks.size,
+        visibleChunks: visible,
+        triangles,
+        queuedRemeshes: meshQueue.length + genQueue.length,
+      });
+    }
   });
 
   return null;

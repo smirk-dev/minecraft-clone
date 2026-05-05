@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three';
 import {
   GRAVITY, JUMP_VELOCITY, PLAYER_EYE, PLAYER_HEIGHT, PLAYER_RADIUS,
   REACH, SPRINT_SPEED, WALK_SPEED, DAY_LENGTH_SECONDS,
@@ -20,9 +19,6 @@ export function PlayerSystem() {
   const { camera, gl } = useThree();
   const phase = useStore((s) => s.phase);
   const world = useStore((s) => s.world);
-  const mode = useStore((s) => s.mode);
-  const slots = useStore((s) => s.slots);
-  const selectedHotbar = useStore((s) => s.selectedHotbar);
   const setSelectedHotbar = useStore((s) => s.setSelectedHotbar);
   const setPhase = useStore((s) => s.setPhase);
   const pickupItem = useStore((s) => s.pickupItem);
@@ -240,7 +236,7 @@ export function PlayerSystem() {
       const id = world.getBlock(hit.block[0], hit.block[1], hit.block[2]);
       const def = BLOCKS[id];
       if (def && def.hardness >= 0) {
-        const time = mode === 'creative' ? 0 : Math.max(0.1, def.hardness);
+        const time = useStore.getState().mode === 'creative' ? 0 : Math.max(0.1, def.hardness);
         breakTimerRef.current += dt;
         runtime.breakProgress = Math.min(1, breakTimerRef.current / Math.max(time, 0.0001));
         if (breakTimerRef.current >= time) {
@@ -261,7 +257,7 @@ export function PlayerSystem() {
       runtime.breakProgress = 0;
     }
 
-    // Placing
+    // Placing — always read fresh slot state from store to avoid stale closure
     placeCooldownRef.current -= dt;
     if (mouseRef.current.right && hit && placeCooldownRef.current <= 0) {
       const place: [number, number, number] = [
@@ -269,20 +265,20 @@ export function PlayerSystem() {
         hit.block[1] + hit.normal[1],
         hit.block[2] + hit.normal[2],
       ];
-      // Don't place inside the player AABB
       const playerBox = {
         minX: runtime.playerPos.x - HALF.x, maxX: runtime.playerPos.x + HALF.x,
         minY: runtime.playerPos.y - HALF.y, maxY: runtime.playerPos.y + HALF.y,
         minZ: runtime.playerPos.z - HALF.z, maxZ: runtime.playerPos.z + HALF.z,
       };
-      const slot = slots[selectedHotbar];
+      const gs = useStore.getState();
+      const slot = gs.slots[gs.selectedHotbar];
       if (slot) {
         const def = BLOCKS[slot.itemId];
         const blocking = def?.solid && blockOverlapsAABB(place[0], place[1], place[2], playerBox);
         if (def?.placeable && !blocking) {
-          if (mode === 'creative' || consumeFromHotbar(1)) {
+          if (gs.mode === 'creative' || consumeFromHotbar(1)) {
             const existing = world.getBlock(place[0], place[1], place[2]);
-            if (!isSolid(existing) && existing !== BLOCK.WATER /* allow placing in water? skip */) {
+            if (!isSolid(existing)) {
               world.setBlock(place[0], place[1], place[2], slot.itemId);
               audio.play('place');
               placeCooldownRef.current = 0.18;
