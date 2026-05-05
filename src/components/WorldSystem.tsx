@@ -1,7 +1,7 @@
 import { useThree, useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { CHUNK_GEN_BUDGET_MS, CHUNK_X, CHUNK_Z, MESH_BUDGET_MS } from '../config/constants';
+import { CHUNK_GEN_BUDGET_MS, MESH_BUDGET_MS } from '../config/constants';
 import { meshChunk } from '../engine/mesher';
 import { chunkKey, worldToChunk } from '../engine/chunk';
 import type { Chunk } from '../engine/chunk';
@@ -26,8 +26,6 @@ export function WorldSystem() {
   const opaqueMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const transpMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const groupRef = useRef<THREE.Group | null>(null);
-  const remeshQueueRef = useRef<string[]>([]);
-  const genQueueRef = useRef<string[]>([]);
 
   useEffect(() => {
     const group = new THREE.Group();
@@ -61,9 +59,6 @@ export function WorldSystem() {
   useEffect(() => {
     if (!world) return;
     pregenerateSpawn(world);
-    // Force initial enqueue so render picks up
-    remeshQueueRef.current = [];
-    genQueueRef.current = [];
   }, [world]);
 
   useFrame(() => {
@@ -231,6 +226,4 @@ function pregenerateSpawn(world: World) {
       world.generateIfNeeded(dx, dz);
     }
   }
-  // Mark unused vars to avoid TS complaints
-  void CHUNK_X; void CHUNK_Z;
 }
