@@ -1,29 +1,37 @@
-import { Canvas } from '@react-three/fiber';
+import { useStore } from './hooks/useStore';
+import { Game } from './components/Game';
+import { TitleScreen } from './ui/TitleScreen';
+import { HUD } from './ui/HUD';
+import { PauseMenu } from './ui/PauseMenu';
+import { Inventory } from './ui/Inventory';
+import { CraftingPanel } from './ui/CraftingPanel';
+import { Settings } from './ui/Settings';
+import { HelpOverlay } from './ui/HelpOverlay';
 
 function App() {
+  const phase = useStore((s) => s.phase);
+  const world = useStore((s) => s.world);
+  const stats = useStore((s) => s.stats);
+
+  // The Game component is mounted whenever a world exists; this preserves chunks and meshes
+  // across pause/inventory/crafting screens.
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
-      <Canvas style={{ background: '#87CEEB' }}>
-        <ambientLight intensity={1} />
-        <directionalLight position={[5, 5, 5]} intensity={1} />
-        <mesh position={[0, 0, -5]}>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color="#8B4513" />
-        </mesh>
-        <mesh position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#7CFC00" />
-        </mesh>
-      </Canvas>
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        color: 'white',
-        fontSize: '2rem',
-        pointerEvents: 'none'
-      }}>+</div>
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+      {world && <Game />}
+      {!world && phase === 'title' && <TitleScreen />}
+      {!world && phase === 'help' && <HelpOverlay />}
+      {!world && phase === 'settings' && <Settings />}
+
+      {world && phase === 'playing' && stats.loadedChunks < 4 && (
+        <div className="loading-banner">Generating world…</div>
+      )}
+
+      {world && <HUD />}
+      {world && phase === 'paused' && <PauseMenu />}
+      {world && phase === 'inventory' && <Inventory />}
+      {world && phase === 'crafting' && <CraftingPanel />}
+      {world && phase === 'settings' && <Settings />}
+      {world && phase === 'help' && <HelpOverlay />}
     </div>
   );
 }
