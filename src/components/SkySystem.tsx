@@ -66,7 +66,7 @@ export function SkySystem() {
     }
 
     // Update voxel shader uniforms via the registry exposed by WorldSystem
-    const getVoxelMats = (window as Record<string, unknown>).__voxelMats as
+    const getVoxelMats = (window as unknown as Record<string, unknown>).__voxelMats as
       (() => Array<THREE.ShaderMaterial | null>) | undefined;
     if (getVoxelMats) {
       const dayUniform = 0.15 + dayFactor * 0.85;

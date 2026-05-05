@@ -30,7 +30,7 @@ export function WorldSystem() {
 
   // Expose materials so SkySystem can update their uniforms directly (avoids scene traversal).
   useEffect(() => {
-    (window as Record<string, unknown>).__voxelMats = () => [opaqueMatRef.current, transpMatRef.current];
+    (window as unknown as Record<string, unknown>).__voxelMats = () => [opaqueMatRef.current, transpMatRef.current];
   }, []);
 
   useEffect(() => {
